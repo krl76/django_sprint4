@@ -72,11 +72,13 @@ class AddNewComment(LoginRequiredMixin, CommentInteractionMixin, CreateView):
         return super().form_valid(form)
 
 
-class EditExistingComment(LoginRequiredMixin, EditableCommentMixin, UpdateView):
+class EditExistingComment(LoginRequiredMixin,
+                          EditableCommentMixin, UpdateView):
     pass
 
 
-class RemoveExistingComment(LoginRequiredMixin, EditableCommentMixin, DeleteView):
+class RemoveExistingComment(LoginRequiredMixin,
+                            EditableCommentMixin, DeleteView):
     pass
 
 
@@ -90,7 +92,8 @@ class ShowUserProfile(DetailView):
     slug_url_kwarg = 'username'
 
     def get_object(self, queryset=None):
-        return get_object_or_404(get_user_model(), username=self.kwargs['username'])
+        return get_object_or_404(get_user_model(),
+                                 username=self.kwargs['username'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -198,7 +201,9 @@ class DisplayPostDetails(DetailView):
 
         now = timezone.now()
         if self.request.user != post.author:
-            if post.pub_date > now or not post.is_published or not post.category.is_published:
+            if (post.pub_date > now
+                    or not post.is_published
+                    or not post.category.is_published):
                 raise Http404("Публикация не найдена или недоступна.")
         return post
 
@@ -220,7 +225,9 @@ class FilterPostsByCategory(PublicPostListMixin, ListView):
 
     def get_queryset(self):
         category_slug = self.kwargs['slug']
-        category = get_object_or_404(Category, slug=category_slug, is_published=True)
+        category = get_object_or_404(Category,
+                                     slug=category_slug,
+                                     is_published=True)
         return count_comments_on_posts(
             super().get_queryset().filter(category=category)
         ).order_by('-pub_date')
