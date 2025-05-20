@@ -33,7 +33,7 @@ class CommentInteractionMixin:
 
     def success_url(self):
         return reverse_lazy('blog:post_detail',
-                             kwargs={'post': self.fetch_related_post().id})
+                            kwargs={'post': self.fetch_related_post().id})
 
 
 class EditableCommentMixin(CommentInteractionMixin):
@@ -72,11 +72,13 @@ class AddNewComment(LoginRequiredMixin, CommentInteractionMixin, CreateView):
         return super().form_valid(form)
 
 
-class EditExistingComment(LoginRequiredMixin, EditableCommentMixin, UpdateView):
+class EditExistingComment(LoginRequiredMixin,
+                          EditableCommentMixin, UpdateView):
     pass
 
 
-class RemoveExistingComment(LoginRequiredMixin, EditableCommentMixin, DeleteView):
+class RemoveExistingComment(LoginRequiredMixin,
+                            EditableCommentMixin, DeleteView):
     pass
 
 
@@ -159,7 +161,7 @@ class EditPublishedPost(LoginRequiredMixin, UpdateView):
 
     def redirect_after_post_edit(self):
         return reverse_lazy('blog:profile',
-                             kwargs={'username': self.request.user.username})
+                            kwargs={'username': self.request.user.username})
 
 
 class DeletePublishedPost(LoginRequiredMixin, DeleteView):
@@ -194,9 +196,9 @@ class DisplayPostDetails(DetailView):
 
         if self.request.user != post.author:
             if (
-                post.pub_date > now
-                or not post.is_published
-                or not post.category.is_published
+                    post.pub_date > now
+                    or not post.is_published
+                    or not post.category.is_published
             ):
                 raise Http404("Публикация не найдена или недоступна.")
         return post
