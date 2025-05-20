@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
-
 User = get_user_model()
 
 
@@ -18,7 +17,7 @@ class Category(models.Model):
         unique=True,
         verbose_name='Идентификатор',
         help_text='Идентификатор страницы для URL; разрешены символы '
-        'латиницы, цифры, дефис и подчёркивание.')
+                  'латиницы, цифры, дефис и подчёркивание.')
     is_published = models.BooleanField(
         default=True,
         verbose_name='Опубликовано',
@@ -31,6 +30,9 @@ class Category(models.Model):
     class Meta:
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
+
+    def __str__(self):
+        return self.title
 
 
 class Location(models.Model):
@@ -51,6 +53,9 @@ class Location(models.Model):
         verbose_name = 'местоположение'
         verbose_name_plural = 'Местоположения'
 
+    def __str__(self):
+        return self.name
+
 
 class Post(models.Model):
     title = models.CharField(
@@ -64,7 +69,7 @@ class Post(models.Model):
         blank=False,
         verbose_name='Дата и время публикации',
         help_text='Если установить дату и время в будущем — '
-        'можно делать отложенные публикации.')
+                  'можно делать отложенные публикации.')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -92,7 +97,45 @@ class Post(models.Model):
         blank=False,
         verbose_name='Добавлено',
         auto_now_add=True)
+    image = models.ImageField('Фото', upload_to='posts_images', blank=True)
+
+    @property
+    def username(self):
+        return self.author.username
 
     class Meta:
         verbose_name = 'публикация'
         verbose_name_plural = 'Публикации'
+
+    def __str__(self):
+        return self.title
+
+
+class Comment(models.Model):
+    text = models.TextField(
+        blank=False,
+        verbose_name='Текст')
+    post = models.ForeignKey(
+        Post,
+        on_delete=models.CASCADE,
+        blank=False,
+        verbose_name='Пост',
+        related_name='comment_set'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        blank=False,
+        verbose_name='Автор комментария'
+    )
+    created_at = models.DateTimeField(
+        blank=False,
+        verbose_name='Добавлено',
+        auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self):
+        return self.text
