@@ -122,7 +122,8 @@ class RemoveExistingComment(LoginRequiredMixin,
         return self.retrieve_instance(queryset)
 
     def get_success_url(self):
-        return reverse_lazy('blog:post_detail', kwargs={'post': self.kwargs['post']})
+        return reverse_lazy('blog:post_detail',
+                            kwargs={'post': self.kwargs['post']})
 
 
 class ShowUserProfile(DetailView):
