@@ -93,7 +93,9 @@ class AddNewComment(LoginRequiredMixin, CreateView):
 
 class EditExistingComment(EditableCommentMixin,
                           LoginRequiredMixin, UpdateView):
-    pass
+    template_name = 'blog/comment.html'
+    form_class = CommentForm
+    model = Comment
 
 
 class RemoveExistingComment(EditableCommentMixin,
