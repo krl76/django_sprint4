@@ -36,13 +36,21 @@ class CommentInteractionMixin(LoginRequiredMixin):
         return reverse('login')
 
 
-class EditableCommentMixin(CommentInteractionMixin):
+class EditableCommentMixin(LoginRequiredMixin):
     def retrieve_instance(self, queryset=None):
         comment_id = self.kwargs.get('comment')
         comment = get_object_or_404(Comment, pk=comment_id)
-        if comment.author != self.request.user:
+        if (comment.author != self.request.user
+                and not self.request.user.is_staff):
             raise Http404("Действие запрещено")
         return comment
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.method.lower() != 'post':
+            # Если используется не POST, перенаправляем или возвращаем 405
+            return redirect('blog:post_detail',
+                            post=self.kwargs['post'])
+        return super().dispatch(request, *args, **kwargs)
 
 
 class PublicPostListMixin:
@@ -75,19 +83,12 @@ class AddNewComment(LoginRequiredMixin, CreateView):
                        kwargs={'post': self.kwargs['post']})
 
     def form_valid(self, form):
-        # Проверяем, что пользователь залогинен
         if not self.request.user.is_authenticated:
             return redirect('login')
 
-        # Привязываем автора и пост к комментарию
         form.instance.author = self.request.user
-        form.instance.post = self.fetch_related_post()
-
+        form.instance.post = get_object_or_404(Post, id=self.kwargs['post'])
         return super().form_valid(form)
-
-    def fetch_related_post(self):
-        post_id = self.kwargs.get('post')
-        return get_object_or_404(Post, id=post_id)
 
 
 class EditExistingComment(EditableCommentMixin,
@@ -97,7 +98,16 @@ class EditExistingComment(EditableCommentMixin,
 
 class RemoveExistingComment(EditableCommentMixin,
                             LoginRequiredMixin, DeleteView):
-    pass
+    template_name = 'blog/comment.html'
+    context_object_name = 'form'
+
+    def get(self, request, *args, **kwargs):
+        # Заставляем использовать POST
+        return self.post(request, *args, **kwargs)
+
+    def get_success_url(self):
+        return reverse_lazy('blog:post_detail',
+                            kwargs={'post': self.kwargs['post']})
 
 
 class ShowUserProfile(DetailView):
