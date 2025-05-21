@@ -23,20 +23,17 @@ def split_into_pages(posts, request, per_page=10):
     return paginator.get_page(page_number)
 
 
-class CommentInteractionMixin:
+class CommentInteractionMixin(LoginRequiredMixin):
     model = Comment
     form_class = CommentForm
     template_name = 'blog/comment.html'
 
     def fetch_related_post(self):
         post_id = self.kwargs.get('post')
-        if not post_id:
-            raise Http404("Не указан ID поста для комментария")
         return get_object_or_404(Post, id=post_id)
 
-    def success_url(self):
-        return reverse_lazy('blog:post_detail',
-                            kwargs={'post': self.kwargs['post']})
+    def get_login_url(self):
+        return reverse('login')
 
 
 class EditableCommentMixin(CommentInteractionMixin):
@@ -68,8 +65,17 @@ class ViewAllComments(ListView):
     form_class = CommentForm
 
 
-class AddNewComment(LoginRequiredMixin, CommentInteractionMixin, CreateView):
+class AddNewComment(LoginRequiredMixin, CreateView):
+    model = Comment
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
+
+    def get_success_url(self):
+        return reverse('blog:post_detail',
+                       kwargs={'post': self.kwargs['post']})
+
     def form_valid(self, form):
+        # Проверяем, что пользователь залогинен
         if not self.request.user.is_authenticated:
             return redirect('login')
 
@@ -78,6 +84,10 @@ class AddNewComment(LoginRequiredMixin, CommentInteractionMixin, CreateView):
         form.instance.post = self.fetch_related_post()
 
         return super().form_valid(form)
+
+    def fetch_related_post(self):
+        post_id = self.kwargs.get('post')
+        return get_object_or_404(Post, id=post_id)
 
 
 class EditExistingComment(LoginRequiredMixin,
