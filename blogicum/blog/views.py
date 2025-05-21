@@ -35,7 +35,8 @@ class CommentInteractionMixin:
         return get_object_or_404(Post, id=post_id)
 
     def success_url(self):
-        return reverse_lazy('blog:post_detail', kwargs={'post': self.kwargs['post']})
+        return reverse_lazy('blog:post_detail',
+                            kwargs={'post': self.kwargs['post']})
 
 
 class EditableCommentMixin(CommentInteractionMixin):
