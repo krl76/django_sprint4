@@ -46,13 +46,13 @@ class EditableCommentMixin:
         return comment
 
     def get_object(self, queryset=None):
-        return self.retrieve_instance(queryset)
+        return self.retrieve_instance()
 
     def dispatch(self, request, *args, **kwargs):
-        # Разрешаем только POST-запросы
-        if request.method.lower() != 'post':
-            return redirect('blog:post_detail',
-                            post=self.kwargs['post'])
+        if request.method.lower() == 'get':
+            # Блокируем GET-удаление, но разрешаем GET-редактирование
+            if '/delete_comment/' in request.path:
+                return super().get(request, *args, **kwargs)
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -99,31 +99,39 @@ class AddNewComment(LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
 
-class EditExistingComment(LoginRequiredMixin,
-                          EditableCommentMixin, UpdateView):
-    template_name = 'blog/comment.html'
-    form_class = CommentForm
+class EditExistingComment(EditableCommentMixin,
+                          LoginRequiredMixin, UpdateView):
     model = Comment
-
-    def get_object(self, queryset=None):
-        return self.retrieve_instance(queryset)
+    form_class = CommentForm
+    template_name = 'blog/comment.html'
 
     def get_success_url(self):
         return reverse('blog:post_detail',
                        kwargs={'post': self.kwargs['post']})
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Ничего не убираем — форма должна быть
+        return context
 
-class RemoveExistingComment(LoginRequiredMixin,
-                            EditableCommentMixin, DeleteView):
-    template_name = 'blog/comment.html'
+
+class RemoveExistingComment(EditableCommentMixin,
+                            LoginRequiredMixin, DeleteView):
     model = Comment
+    template_name = 'blog/comment.html'
 
     def get_object(self, queryset=None):
-        return self.retrieve_instance(queryset)
+        return super().get_object(queryset)
 
     def get_success_url(self):
         return reverse_lazy('blog:post_detail',
                             kwargs={'post': self.kwargs['post']})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Явно убираем форму из контекста
+        context.pop('form', None)
+        return context
 
 
 class ShowUserProfile(DetailView):
