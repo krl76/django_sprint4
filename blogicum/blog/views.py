@@ -29,11 +29,13 @@ class CommentInteractionMixin:
     template_name = 'blog/comment.html'
 
     def fetch_related_post(self):
-        return get_object_or_404(Post, id=self.kwargs['post'])
+        post_id = self.kwargs.get('post')
+        if not post_id:
+            raise Http404("Не указан ID поста для комментария")
+        return get_object_or_404(Post, id=post_id)
 
     def success_url(self):
-        return reverse_lazy('blog:post_detail',
-                            kwargs={'post': self.fetch_related_post().id})
+        return reverse_lazy('blog:post_detail', kwargs={'post': self.kwargs['post']})
 
 
 class EditableCommentMixin(CommentInteractionMixin):
@@ -67,8 +69,13 @@ class ViewAllComments(ListView):
 
 class AddNewComment(LoginRequiredMixin, CommentInteractionMixin, CreateView):
     def form_valid(self, form):
+        if not self.request.user.is_authenticated:
+            return redirect('login')
+
+        # Привязываем автора и пост к комментарию
         form.instance.author = self.request.user
         form.instance.post = self.fetch_related_post()
+
         return super().form_valid(form)
 
 
