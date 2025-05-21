@@ -36,7 +36,7 @@ class CommentInteractionMixin(LoginRequiredMixin):
         return reverse('login')
 
 
-class EditableCommentMixin(LoginRequiredMixin):
+class EditableCommentMixin:
     def retrieve_instance(self, queryset=None):
         comment_id = self.kwargs.get('comment')
         comment = get_object_or_404(Comment, pk=comment_id)
@@ -45,9 +45,12 @@ class EditableCommentMixin(LoginRequiredMixin):
             raise Http404("Действие запрещено")
         return comment
 
+    def get_object(self, queryset=None):
+        return self.retrieve_instance(queryset)
+
     def dispatch(self, request, *args, **kwargs):
+        # Разрешаем только POST-запросы
         if request.method.lower() != 'post':
-            # Если используется не POST, перенаправляем или возвращаем 405
             return redirect('blog:post_detail',
                             post=self.kwargs['post'])
         return super().dispatch(request, *args, **kwargs)
@@ -86,30 +89,40 @@ class AddNewComment(LoginRequiredMixin, CreateView):
         if not self.request.user.is_authenticated:
             return redirect('login')
 
+        # Получаем пост
+        related_post = get_object_or_404(Post, id=self.kwargs['post'])
+
+        # Привязываем автора и пост
         form.instance.author = self.request.user
-        form.instance.post = get_object_or_404(Post, id=self.kwargs['post'])
+        form.instance.post = related_post
+
         return super().form_valid(form)
 
 
-class EditExistingComment(EditableCommentMixin,
-                          LoginRequiredMixin, UpdateView):
+class EditExistingComment(LoginRequiredMixin,
+                          EditableCommentMixin, UpdateView):
     template_name = 'blog/comment.html'
     form_class = CommentForm
     model = Comment
 
-
-class RemoveExistingComment(EditableCommentMixin,
-                            LoginRequiredMixin, DeleteView):
-    template_name = 'blog/comment.html'
-    context_object_name = 'form'
-
-    def get(self, request, *args, **kwargs):
-        # Заставляем использовать POST
-        return self.post(request, *args, **kwargs)
+    def get_object(self, queryset=None):
+        return self.retrieve_instance(queryset)
 
     def get_success_url(self):
-        return reverse_lazy('blog:post_detail',
-                            kwargs={'post': self.kwargs['post']})
+        return reverse('blog:post_detail',
+                       kwargs={'post': self.kwargs['post']})
+
+
+class RemoveExistingComment(LoginRequiredMixin,
+                            EditableCommentMixin, DeleteView):
+    template_name = 'blog/comment.html'
+    model = Comment
+
+    def get_object(self, queryset=None):
+        return self.retrieve_instance(queryset)
+
+    def get_success_url(self):
+        return reverse_lazy('blog:post_detail', kwargs={'post': self.kwargs['post']})
 
 
 class ShowUserProfile(DetailView):
