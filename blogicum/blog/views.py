@@ -90,13 +90,13 @@ class AddNewComment(LoginRequiredMixin, CreateView):
         return get_object_or_404(Post, id=post_id)
 
 
-class EditExistingComment(LoginRequiredMixin,
-                          EditableCommentMixin, UpdateView):
+class EditExistingComment(EditableCommentMixin,
+                          LoginRequiredMixin, UpdateView):
     pass
 
 
-class RemoveExistingComment(LoginRequiredMixin,
-                            EditableCommentMixin, DeleteView):
+class RemoveExistingComment(EditableCommentMixin,
+                            LoginRequiredMixin, DeleteView):
     pass
 
 
